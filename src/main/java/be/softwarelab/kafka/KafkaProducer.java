@@ -10,6 +10,8 @@ import org.apache.kafka.common.serialization.LongSerializer;
 import org.apache.kafka.common.serialization.StringSerializer;
 
 import java.util.Properties;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
 
 @Slf4j
 public class KafkaProducer {
@@ -33,6 +35,7 @@ public class KafkaProducer {
         }
         log.info("==== Produce {} messages.", messageCount);
         runProducer(messageCount);
+        runProducerAsynchronously(messageCount);
         log.info("==== Kafka Producer ended");
     }
 
@@ -50,7 +53,7 @@ public class KafkaProducer {
             for (int count = 1; count <= sendMessageCount; count++) {
                 // Make the index unique (timestamp)
                 Long index = count + time;
-                String message = "Message " + count + " (index:" + index + ")";
+                String message = "Synchronous message " + count + " (index:" + index + ")";
                 ProducerRecord<Long, String> record = new ProducerRecord<>(TOPIC, index, message);
                 RecordMetadata metadata = producer.send(record).get();
                 long elapsedTime = System.currentTimeMillis() - time;
@@ -58,6 +61,40 @@ public class KafkaProducer {
                           record.key(), record.value(), metadata.partition(), metadata.offset(), elapsedTime);
             }
         } finally {
+            producer.flush();
+            producer.close();
+        }
+    }
+
+    /**
+     * Asynchronous producer
+     * @param sendMessageCount, never null
+     * @throws InterruptedException
+     */
+    public static void runProducerAsynchronously (final int sendMessageCount) throws InterruptedException {
+        final Producer<Long, String> producer = createProducer();
+        long time = System.currentTimeMillis();
+        final CountDownLatch countDownLatch = new CountDownLatch(sendMessageCount);
+
+        try {
+            for (int count = 1; count <= sendMessageCount; count++) {
+                // Make the index unique (timestamp)
+                Long index = count + time;
+                String message = "Asynchronous message " + count + " (index:" + index + ")";
+                ProducerRecord<Long, String> record = new ProducerRecord<>(TOPIC, index, message);
+                producer.send(record, (metadata, exception) -> {
+                    long elapsedTime = System.currentTimeMillis() - time;
+                    if (metadata != null) {
+                        log.debug("Record sent [key={} value={}] metadata(partition={}, offset={}) time=%d",
+                                  record.key(), record.value(), metadata.partition(), metadata.offset(), elapsedTime);
+                    } else {
+                        exception.printStackTrace();
+                    }
+                    countDownLatch.countDown();
+                });
+            }
+            countDownLatch.await(25, TimeUnit.SECONDS);
+        }finally {
             producer.flush();
             producer.close();
         }
