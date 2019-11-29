@@ -2,10 +2,7 @@ package be.softwarelab.kafka;
 
 import com.sun.istack.internal.NotNull;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.kafka.clients.producer.Producer;
-import org.apache.kafka.clients.producer.ProducerConfig;
-import org.apache.kafka.clients.producer.ProducerRecord;
-import org.apache.kafka.clients.producer.RecordMetadata;
+import org.apache.kafka.clients.producer.*;
 import org.apache.kafka.common.serialization.LongSerializer;
 import org.apache.kafka.common.serialization.StringSerializer;
 
@@ -14,7 +11,7 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 
 @Slf4j
-public class KafkaProducer {
+public class KafkaProducerExample {
 
     // Kafka constants
     private final static String TOPIC = "test";
@@ -68,10 +65,11 @@ public class KafkaProducer {
 
     /**
      * Asynchronous producer
+     *
      * @param sendMessageCount, never null
      * @throws InterruptedException
      */
-    public static void runProducerAsynchronously (final int sendMessageCount) throws InterruptedException {
+    public static void runProducerAsynchronously(final int sendMessageCount) throws InterruptedException {
         final Producer<Long, String> producer = createProducer();
         long time = System.currentTimeMillis();
         final CountDownLatch countDownLatch = new CountDownLatch(sendMessageCount);
@@ -94,7 +92,7 @@ public class KafkaProducer {
                 });
             }
             countDownLatch.await(25, TimeUnit.SECONDS);
-        }finally {
+        } finally {
             producer.flush();
             producer.close();
         }
@@ -112,7 +110,7 @@ public class KafkaProducer {
         props.put(ProducerConfig.CLIENT_ID_CONFIG, "KafkaExampleProducer");
         props.put(ProducerConfig.KEY_SERIALIZER_CLASS_CONFIG, LongSerializer.class.getName());
         props.put(ProducerConfig.VALUE_SERIALIZER_CLASS_CONFIG, StringSerializer.class.getName());
-        return new org.apache.kafka.clients.producer.KafkaProducer<Long, String>(props);
+        return new KafkaProducer<Long, String>(props);
     }
 
 }
