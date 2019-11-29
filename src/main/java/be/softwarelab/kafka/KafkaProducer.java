@@ -4,6 +4,8 @@ import com.sun.istack.internal.NotNull;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.kafka.clients.producer.Producer;
 import org.apache.kafka.clients.producer.ProducerConfig;
+import org.apache.kafka.clients.producer.ProducerRecord;
+import org.apache.kafka.clients.producer.RecordMetadata;
 import org.apache.kafka.common.serialization.LongSerializer;
 import org.apache.kafka.common.serialization.StringSerializer;
 
@@ -30,6 +32,35 @@ public class KafkaProducer {
             messageCount = Integer.valueOf(args[0]);
         }
         log.info("==== Produce {} messages.", messageCount);
+        runProducer(messageCount);
+        log.info("==== Kafka Producer ended");
+    }
+
+    /**
+     * Run a synchronous producer
+     *
+     * @param sendMessageCount, never null
+     * @throws Exception
+     */
+    public static void runProducer(final int sendMessageCount) throws Exception {
+        Producer<Long, String> producer = createProducer();
+        long time = System.currentTimeMillis();
+
+        try {
+            for (int count = 1; count <= sendMessageCount; count++) {
+                // Make the index unique (timestamp)
+                Long index = count + time;
+                String message = "Message " + count + " (index:" + index + ")";
+                ProducerRecord<Long, String> record = new ProducerRecord<>(TOPIC, index, message);
+                RecordMetadata metadata = producer.send(record).get();
+                long elapsedTime = System.currentTimeMillis() - time;
+                log.debug("Record sent [key={} value={}] metadata(partition={}, offset={}) time=%d",
+                          record.key(), record.value(), metadata.partition(), metadata.offset(), elapsedTime);
+            }
+        } finally {
+            producer.flush();
+            producer.close();
+        }
     }
 
     /**
