@@ -1,0 +1,30 @@
+/target/
+*~
+*.bak
+*.old
+*.NavData
+nbactions.xml
+nb-configuration.xml
+
+## Directory-based project format:
+.idea/
+!.idea/copyright
+!.idea/dataSources.xml
+
+# Output directories
+target
+bin
+*.class
+/build/
+/dist/
+bin/
+
+# Eclipse metadata
+.metadata
+.project
+.recommenders
+.settings
+.classpath
+
+# Log files
+*.log
